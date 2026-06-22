@@ -1,9 +1,18 @@
 package main
 
-import "fmt"
+import (
+	"flag"
+	"fmt"
+)
 
 func main() {
-	greeting := greet("id")
+	var lang string
+	flag.StringVar(&lang, "lang", "en", "The required language, e.g. en, ur, el, fr, he and vi.")
+	flag.Parse()
+
+	// fmt.Printf("lang: %v", lang)
+	
+	greeting := greet(language(lang))
 	fmt.Println(greeting)
 }
 
@@ -13,7 +22,7 @@ var phrasebook = map[language] string {
 	"el": "Χαίρετε Κόσμε",
 	"en": "Hello world",
 	"fr": "Bonjour le monde",
-	"שלום עולם" :"he",
+	"he": "שלום עולם",
 	"ur": " ہﯿﻠﻮ ",
 	"vi": "Xin chào Thế Giới",
 }
