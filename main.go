@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
-	"learngo-pockets/bookworms"
+	"learngo-pockets/utils"
 )
 
 func main () {
@@ -15,4 +15,9 @@ func main () {
 	}
 
 	fmt.Println(bookwormsList)
+
+	commonBooks := bookworms.FindCommonBooks(bookwormsList)
+
+	fmt.Println("Here are the books in common:")
+	bookworms.DisplayBooks(commonBooks)
 }
