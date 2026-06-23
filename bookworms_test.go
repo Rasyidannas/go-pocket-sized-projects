@@ -34,17 +34,17 @@ func TestLoadBookworms_Success(t *testing.T) {
 		},
 	}
 
-	for name, tc := range tests {
+	for name, testCase := range tests {
 		t.Run(name, func(t *testing.T) {
-			got, err := bookworms.LoadBookworms(tc.bookwormsFile)
-			if tc.wantErr && err == nil {
-				t.Fatal("expected an error, got none")
+			got, err := bookworms.LoadBookworms(testCase.bookwormsFile)
+			if err != nil && !testCase.wantErr {
+				t.Fatalf("unexpected error: %s", err.Error())
 			}
-			if !tc.wantErr && err != nil {
-				t.Fatalf("unexpected error: %s", err)
+			if err == nil && testCase.wantErr {
+				t.Fatalf("expected an error, got none %s", err.Error())
 			}
-			if !equalBookworms(got, tc.want) {
-				t.Fatalf("got %v, want %v", got, tc.want)
+			if !equalBookworms(got, testCase.want) {
+				t.Fatalf("different result: got %v, expected %v", got, testCase.want)
 			}
 		})
 	}
