@@ -1,76 +1,72 @@
-package recomendations
+package bookworms
 
 import (
 	"sort"
+	"math"
 )
 
-type Recomendation struct {
+type Recommendation struct {
 	Book Book
 	Score float64
 }
 
 type Set map[Book] struct{}
 
+func NewSet(books ...Book) Set {
+	s := make(Set)
+	for _, b := range books {
+			s[b] = struct{}{}
+	}
+	return s
+}
+
 func(s Set) Contains(b Book) bool {
 	_, ok := s[b]
 	return ok
 }
-// Books is a list of Books. Defining a custom type to implement sort.Interf
-type byAuthor []Book
 
-// Len implements sort.Interface by returning the length of the collection.
-func (b byAuthor) Len() int { return len(b) }
+func Recommend(allReaders []Bookworm, target Bookworm, n int) []Recommendation {
+	read := NewSet(target.Books...)
 
-// Swap implements sort.Interface and swaps two books.
-func (b byAuthor) Swap(i, j int) {
-	b[i], b[j] = b[j], b[i]
-}
+	scores := map[Book]float64{}
 
-// Less implements sort.Interface and returns books sorted by Author and the
-func (b byAuthor) Less(i, j int) bool {
-	
-	if b[i].Author != b[j].Author {
-		return b.LessByAuthor(i, j)
+	for _, reader := range allReaders {
+			if reader.Name == target.Name {
+					continue
+			}
+
+			var similarity float64
+			for _, book := range reader.Books {
+					if read.Contains(book) {
+							similarity++
+					}
+			}
+
+			if similarity == 0 {
+					continue
+			}
+
+			score := math.Log(similarity) + 1
+			for _, book := range reader.Books {
+					if !read.Contains(book) {
+							scores[book] += score
+					}
+			}
 	}
 
-	return b[i].Title < b[j].Title
-}
-
-// sortBooks sorts the books by Author and then Title in alphabetical order.
-func sortBooks(books []Book) []Book {
-	sort.Sort(byAuthor(books))
-	return books
-}
-
-func Recommend(allReaders []Reader, target Reader, n int) []Recomendation {
-	read := Set(target.Books...)
-
-	recommendations := map[Book]float64{}
-
-	for _, book := range allReaders {
-		if reader.Name == target.Name {
-			continue
-		}
-
-		var similarity float64
-		for _, book := range reader.Books {
-			if read.Contains(book) {
-				similarity++
-			}
-		}
-
-		if similarity == 0 {
-			continue
-}
-
-		score := math.Log(similarity) + 1
-		for _, book := range reader.Book {
-			if !read.Contains(book) {
-				recomendations[book] += score
-			}
-		}
+	// Convert map to slice and sort by score descending
+	recommendations := make([]Recommendation, 0, len(scores))
+	for book, score := range scores {
+			recommendations = append(recommendations, Recommendation{Book: book, Score: score})
 	}
 
-	// Todo: sort by score
-	// Todo: only output a certain amount of recommendations (n)
+	sort.Slice(recommendations, func(i, j int) bool {
+			return recommendations[i].Score > recommendations[j].Score
+	})
+
+	if n > len(recommendations) {
+			n = len(recommendations)
+	}
+
+	return recommendations[:n]
 }
