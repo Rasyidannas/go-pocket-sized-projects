@@ -1,3 +1,5 @@
+package packetlog
+
 type Level byte
 
 const (
