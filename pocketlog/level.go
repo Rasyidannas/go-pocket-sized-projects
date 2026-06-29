@@ -1,4 +1,4 @@
-package packetlog
+package pocketlog
 
 type Level byte
 

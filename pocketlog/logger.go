@@ -1,4 +1,4 @@
-package packetlog
+package pocketlog
 
 // Logger is used to log information
 type Logger struct {
@@ -18,6 +18,6 @@ func (l *Logger) Infof(format string, args ...any) {
 // New returns you a logger, ready to log at the required threshold.
 func New(threshold Level) *Logger {
 	return &Logger{
-		threshold: threshold
+		threshold: threshold,
 	}
 }
