@@ -42,7 +42,7 @@ func (l *Logger) Errorf(format string, args ...any) {
 		return
 	}
 
-	_, _ = fmt.Printf(format+"\n", args...)
+	l.logf(format, args...)
 }
 
 // Error logs an empty message at the error level.
