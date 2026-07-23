@@ -1,3 +1,3 @@
-module learngo-pockets/logger
+module learngo-pockets/gordle
 
 go 1.24.3
