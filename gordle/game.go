@@ -5,6 +5,7 @@ import (
 	"bufio"
 	"io"
 	"os"
+	"strings"
 )
 
 // Game holds all information we need to play a game of gorlde
@@ -64,4 +65,9 @@ func (g *Game) ask() []rune {
 			return guess
 		}
 	}
+}
+
+// plitToUppercaseCharacters is a naive implementation to turn a string int
+func splitToUppercaseChaacters(input string) []rune {
+	return []rune(strings.ToUpper(input))
 }
