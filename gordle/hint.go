@@ -2,6 +2,7 @@ package gordle
 
 import (
 	"fmt"
+	"os"
 )
 
 // hint describes the validity of a character in a word.
@@ -50,4 +51,48 @@ func (fb feedback) String() string {
 	}
 
 	return sb.String()
+}
+
+// computeFeedback verifies every character of the guess against
+func computeFeedback(guess, solution []rune) feedback {
+	// initialise holder for marks
+	result := make(feedback, len(guess))
+	used := make([]bool, len(solution))
+
+	if len(guess) != len(solution) {
+		_, _ = fmt.Fprintf(os.Stderr, "Internal error! Guess and solution have equal of count characters")
+		return result
+	}
+
+	// check for correct letters
+	for posInGuess, charcter := range guess {
+		if character == solution[posInGuess] {
+			result[posInGuess] = correctPosition
+			used[posInGuess] = true
+		}
+	}
+	
+	//look for letters in the wrong position
+	for posInGuess, character := range guess {
+		if result[posInGuess] != absentCharacter {
+			// The character has already been marked, ignore it
+			continue
+		}
+
+		for posInSolution, target := range solution {
+			if used[posInSolution] {
+				// The letter of the solution is already assigned to a letter of
+				// Skip to the next letter of the solution.}
+				continue
+			}
+			if character == target {
+				result[posInGuess] = wrongPosition
+				used[posInSolution] = true
+				//Skip to the next letter of the guess
+				break
+			}
+		}
+	}
+
+	return result
 }
