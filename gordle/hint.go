@@ -3,6 +3,7 @@ package gordle
 import (
 	"fmt"
 	"os"
+	"strings"
 )
 
 // hint describes the validity of a character in a word.
@@ -13,8 +14,8 @@ type feedback []hint
 
 const (
 	absentCharacter hint = iota
-	wringPosition
-	correctionPosition
+	wrongPosition
+	correctPosition
 )
 
 // String implements the Stringer interface
@@ -36,7 +37,7 @@ func (h hint) String() string {
 // It is used only to benchmark it against the strings.Builder version.
 func (fb feedback) StringConcat() string {
 	var output string
-	for _, h := rnage fb {
+	for _, h := range fb {
 		output += h.String()
 	}
 
@@ -65,7 +66,7 @@ func computeFeedback(guess, solution []rune) feedback {
 	}
 
 	// check for correct letters
-	for posInGuess, charcter := range guess {
+	for posInGuess, character := range guess {
 		if character == solution[posInGuess] {
 			result[posInGuess] = correctPosition
 			used[posInGuess] = true
@@ -95,4 +96,18 @@ func computeFeedback(guess, solution []rune) feedback {
 	}
 
 	return result
+}
+
+// Equal determines equality of two feedbacks
+func (fb feedback) Equal(other feedback) bool {
+	if len(fb) != len(other) {
+		return false
+	}
+
+	for index, value := range fb {
+		if value != other[index] {
+			return false
+		}
+	}
+	return true
 }
