@@ -16,15 +16,17 @@ type Game struct{
 	maxAttempts int
 }
 
-// New reutrns a Game, which can be used to Play!
-func New(playerInput io.Reader, solution string, maxAttempts int) *Game {
+// New returns a Game variable, which can be used to Play!
+func New(reader io.Reader, corpus []string, maxAttempts int) (*Game, error) {
+	if len(corpus) == 0 {
+		return nil, ErrCorpusIsEmpty
+	}
 	g := &Game{
-		reader: bufio.NewReader(playerInput),
-		solution: splitToUppercaseCharacters(solution),
+		reader: bufio.NewReader(reader),
+		solution: []rune(strings.ToUpper(pickWord(corpus))), // pick a rand
 		maxAttempts: maxAttempts,
 	}
-
-	return g
+	return g, nil
 }
 
 // Play runs the game.
@@ -39,7 +41,7 @@ func (g *Game) Play() {
 		fmt.Println(fb.String())
 
 		if slices.Equal(guess, g.solution) {
-			fmt.Printf("You won! You found it in %d guess(es)!", len(guess))
+			fmt.Printf("You won! You found it in %d attempt(s)! The word was: %s", currentAttempt, string(g.solution))
 			return
 		}
 	}
