@@ -1,5 +1,3 @@
-module learngo-pockets/gordle
+module learngo-pockets/moneyconverter
 
-go 1.25.0
-
-require golang.org/x/exp v0.0.0-20260813180055-c1d0aacb2297 // indirect
+go 1.24.3
