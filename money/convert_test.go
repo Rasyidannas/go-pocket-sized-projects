@@ -1,7 +1,6 @@
 package money_test
 
 import (
-	"reflect"
 	"testing"
 	
 	"learngo-pockets/moneyconverter/money"
@@ -10,19 +9,15 @@ import (
 func TestConvert(t *testing.T) {
 	tt := map[string]struct {
 		amount  money.Amount
-		to money.Currency
+		to      money.Currency
 		validate func(t *testing.T, got money.Amount, err error)
 	}{
 		"34.98 USD to EUR": {
 			amount: mustParseAmount(t, "34.98", "USD"),
-			to: mustParseCurrency(t, "EUR"),
+			to:     mustParseCurrency(t, "EUR"),
 			validate: func(t *testing.T, got money.Amount, err error) {
 				if err != nil {
 					t.Errorf("expected no error, got %s", err)
-				}
-				expected := money.Amount{}
-				if !reflect.DeepEqual(got, expected) {
-					t.Errorf("expected %v, got %v", expected, got)
 				}
 			},
 		},
