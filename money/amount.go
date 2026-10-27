@@ -32,3 +32,8 @@ func (a Amount) validate() error {
 
 	return nil
 }
+
+// String implements stringer.
+func (a Amount) String() string {
+	return a.quantity.String() + " " + a.currency.code
+}
