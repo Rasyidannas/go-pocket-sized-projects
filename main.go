@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"learngo-pockets/moneyconverter/money"
+	"learngo-pockets/moneyconverter/ecbank"
 )
 
 func main() {
@@ -41,11 +42,13 @@ func main() {
 
 	amount, err := money.NewAmount(quantity, fromCurrency)
 	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, err.Error())
+		_, _ = fmt.Fprintln(os.Stderr, err.Error())
 		os.Exit(1)
 	}
 
-	convertedAmount, err := money.Convert(amount, toCurrency)
+	rates := ecbank.Client{}
+
+	convertedAmount, err := money.Convert(amount, toCurrency, rates)
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "unable to convert %s to %s: %s.\n", amount, toCurrency, err.Error())
 		os.Exit(1)

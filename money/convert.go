@@ -1,9 +1,20 @@
 package money
 
+import (
+	"fmt"
+)
+
 // Convert applies the change rate to convert an amount to a target currency.
-func Convert(amount Amount, to Currency) (Amount, error) {
+func Convert(amount Amount, to Currency, rates exchangeRates) (Amount, error) {
+ // fetch the change rate for the day
+	r, err := rates.FetchExchangeRate(amount.currency, to) 
+
+	if err != nil {
+		return Amount{}, fmt.Errorf("cannot get change rate: %w", err)
+	}
+
 	// Convert to the target currency applying the fetched change rate.
-	convertedValue := applyExchangeRate(amount, to, ExchangeRate{subunits: 2, precision: 0})
+	convertedValue := applyExchangeRate(amount, to, r)
 
 	// validate the converted amount is in the handled bounded range.
 	if err := convertedValue.validate(); err != nil {
@@ -28,10 +39,10 @@ func applyExchangeRate(a Amount, target Currency, rate ExchangeRate) Amount {
 	switch {
 	case converted.precision > target.precision:
 		// The converted value is too precise, let's chunk some digits off. This will floor down the result.
-		converted.subunits = converted.subunits / int64(pow10(int(converted.precision - target.precision)))
+		converted.subunits = converted.subunits / pow10(converted.precision - target.precision)
 	case converted.precision < target.precision:
 		// Multiply, adding enough zeroes to reach the desired precision.
-		converted.subunits = converted.subunits * int64(pow10(int(target.precision - converted.precision)))
+		converted.subunits = converted.subunits * pow10(target.precision - converted.precision)
 	}
 
 	converted.precision = target.precision

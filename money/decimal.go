@@ -2,31 +2,33 @@ package money
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
-	"math"
 )
 
-// Decimal can represent a floating-point number with a fixed precision.
-// example: 1.52 = 152 * 10^(-2) will be stored as {152, 2} 
+// Decimal is capable of storing a decimal value such as 30 or 1543.243.
+// example: 1.52 = 152 * 10^(-2) will be stored as {152, 2}
 type Decimal struct {
-	// subunits is the amount of subunits. Multiply it by the precision to g
+	// subunits is the amount of subunits. Multiply it by the precision to get the real value
 	subunits int64
 	// Number of "subunits" in a unit, expressed as a power of 10.
-	precision byte 
+	precision byte
 }
 
 const (
 	// ErrInvalidDecimal is returned if the decimal is malformed.
 	ErrInvalidDecimal = Error("unable to convert the decimal")
-	// ErrTooLarge is returned if the quantity is too large - this would cause 12 digits
+
+	// ErrTooLarge is returned if the quantity is too large - this would cause floating point precision errors.
 	ErrTooLarge = Error("quantity over 10^12 is too large")
-	// maxDecimal is the number of digits in a thousand billion.
+
+	// maxDecimal value is a thousand billion, using the short scale -- 10^12.
 	maxDecimal = 1e12
 )
 
 // ParseDecimal converts a string into its Decimal representation.
-// It assumes there is up to one decimal separator, and that the separator is dot
+// It assumes there is up to one decimal separator, and that the separator is '.' (full stop character).
 func ParseDecimal(value string) (Decimal, error) {
 	intPart, fracPart, _ := strings.Cut(value, ".")
 
@@ -35,31 +37,39 @@ func ParseDecimal(value string) (Decimal, error) {
 		return Decimal{}, fmt.Errorf("%w: %s", ErrInvalidDecimal, err.Error())
 	}
 
-	if subunits > maxDecimal {
-		return Decimal{}, ErrTooLarge
-	}
-
 	precision := byte(len(fracPart))
 	dec := Decimal{subunits: subunits, precision: precision}
 
 	// Let's clean the representation a bit. Remove trailing zeroes.
 	dec.simplify()
 
+	if dec.subunits > maxDecimal {
+		return Decimal{}, ErrTooLarge
+	}
+
 	return dec, nil
 }
 
-func (d *Decimal) simplify() {
-	// Using %10 returns the last digit in base 10 of a number.
-	// If the precision is positive, that digit belongs to the right side of the decimal point.
-	for d.subunits%10 == 0 && d.precision > 0 {
-		d.precision--
-		d.subunits /= 10
+// String implements stringer and returns the Decimal formatted as
+// digits and optionally a decimal point followed by digits.
+func (d *Decimal) String() string {
+	// Quick-win, no need to do maths.
+	if d.precision == 0 {
+		return fmt.Sprintf("%d", d.subunits)
 	}
+
+	centsPerUnit := pow10(d.precision)
+	frac := d.subunits % centsPerUnit
+	integer := d.subunits / centsPerUnit
+
+	// We always want to print the correct number of digits - even if they finish with 0.
+	decimalFormat := "%d.%0" + strconv.Itoa(int(d.precision)) + "d"
+	return fmt.Sprintf(decimalFormat, integer, frac)
 }
 
 // pow10 is a quick implementation of how to raise 10 to a given power.
 // It's optimised for small powers, and slow for unusually high powers.
-func pow10(power int) int {
+func pow10(power byte) int64 {
 	switch power {
 	case 0:
 		return 1
@@ -70,23 +80,16 @@ func pow10(power int) int {
 	case 3:
 		return 1000
 	default:
-		return int(math.Pow(10, float64(power)))
+		return int64(math.Pow(10, float64(power)))
 	}
 }
 
-// String implements stringer and returns the Decimal formatted as
-// digits and optionally a decimal point followed by digits.
-func (d *Decimal) String() string {
-	// Quick-win, no need to do maths
-	if d.precision == 0 {
-		return fmt.Sprintf("%d", d.subunits)
+// simplifies removes trailing zeroes - as long as they're on the right side of the decimal separator.
+func (d *Decimal) simplify() {
+	// Using %10 returns the last digit in base 10 of a number.
+	// If the precision is positive, that digit belongs to the right side of the decimal separator.
+	for d.subunits%10 == 0 && d.precision > 0 {
+		d.precision--
+		d.subunits /= 10
 	}
-
-	centsPerUnit := int64(pow10(int(d.precision)))
-	frac := d.subunits % centsPerUnit
-	integer := d.subunits / centsPerUnit
-
-	// We always want to print the correct number of digits - even if they finish with 0.
-	decimalFormat := "%d.%0" + strconv.Itoa(int(d.precision)) + "d"
-	return fmt.Sprintf(decimalFormat, integer, frac)
 }
