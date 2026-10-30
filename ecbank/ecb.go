@@ -1,16 +1,18 @@
 package ecbank
 
 import (
-	"net/http"
+	"errors"
 	"fmt"
+	"net/http"
+	"net/url"
+	"time"
 
 	"learngo-pockets/moneyconverter/money"
 )
 
 const (
-	clientErrorClass = 4
-	serverErrorClass = 5
-	ErrCallingServer = ecbankError("error calling server")
+	ErrCallingServer      = ecbankError("error calling server")
+	ErrTimeout            = ecbankError("timed out when waiting for response")
 	ErrUnexpectedFormat   = ecbankError("unexpected response format")
 	ErrChangeRateNotFound = ecbankError("couldn't find the exchange rate")
 	ErrClientSide         = ecbankError("client side error when contacting ECB")
@@ -18,10 +20,50 @@ const (
 	ErrUnknownStatusCode  = ecbankError("unknown status code contacting ECB")
 )
 
-// Client can call the bank to retrive exchange rates.
+// Client can call the bank to retrieve exchange rates.
 type Client struct {
-	url string
+	client *http.Client
 }
+
+// NewClient builds a Client that can fetch exchange rates within a given timeout.
+func NewClient(timeout time.Duration) Client {
+	return Client{
+		client: &http.Client{Timeout: timeout},
+	}
+}
+
+// FetchExchangeRate fetches today's ExchangeRate and returns it.
+func (c Client) FetchExchangeRate(source, target money.Currency) (money.ExchangeRate, error) {
+	const euroxrefURL = "http://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml"
+
+	resp, err := c.client.Get(euroxrefURL)
+	if err != nil {
+		var urlErr *url.Error
+		if ok := errors.As(err, &urlErr); ok && urlErr.Timeout() {
+			return money.ExchangeRate{}, fmt.Errorf("%w: %s", ErrTimeout, err.Error())
+		}
+		return money.ExchangeRate{}, fmt.Errorf("%w: %s", ErrCallingServer, err.Error())
+	}
+
+	// don't forget to close the response's body
+	defer resp.Body.Close()
+
+	if err = checkStatusCode(resp.StatusCode); err != nil {
+		return money.ExchangeRate{}, err
+	}
+
+	rate, err := readRateFromResponse(source.Code(), target.Code(), resp.Body)
+	if err != nil {
+		return money.ExchangeRate{}, err
+	}
+
+	return rate, nil
+}
+
+const (
+	clientErrorClass = 4
+	serverErrorClass = 5
+)
 
 // checkStatusCode returns a different error depending on the returned status code.
 func checkStatusCode(statusCode int) error {
@@ -44,32 +86,4 @@ func checkStatusCode(statusCode int) error {
 func httpStatusClass(statusCode int) int {
 	const httpErrorClassSize = 100
 	return statusCode / httpErrorClassSize
-}
-
-// FetchExchangeRate fetches today's ExchangeRate and returns it.
-func (c Client) FetchExchangeRate(source, target money.Currency) (money.ExchangeRate, error) {
-	const euroxrefURL = "http://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml"
-
-	if c.url == "" {
-		c.url = euroxrefURL
-	}
-
-	resp, err := http.Get(c.url)
-	if err != nil {
-		return money.ExchangeRate{}, fmt.Errorf("%w: %s", ErrCallingServer, err.Error())
-	}
-
-	// don't forget to close the response's body
-	defer resp.Body.Close()
-
-	if err = checkStatusCode(resp.StatusCode); err != nil {
-		return money.ExchangeRate{}, err
-	}
-
-	rate, err := readRateFromResponse(source.Code(), target.Code(), resp.Body)
-	if err != nil {
-		return money.ExchangeRate{}, err
-	}
-
-	return rate, nil
 }

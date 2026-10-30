@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"time"
 
 	"learngo-pockets/moneyconverter/money"
 	"learngo-pockets/moneyconverter/ecbank"
@@ -46,7 +47,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	rates := ecbank.Client{}
+	rates := ecbank.NewClient(30 * time.Second)
 
 	convertedAmount, err := money.Convert(amount, toCurrency, rates)
 	if err != nil {
